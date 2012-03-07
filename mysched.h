@@ -1,3 +1,4 @@
+#include <signal.h>
 /*
  * mysched.h -- a header for implementation of thread scheduler
  *

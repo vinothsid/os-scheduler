@@ -5,14 +5,16 @@ void mythread_q_init(mythread_queue_t *headp,void *item) {
 	if((((mythread_t)item)->attribute)==NULL) {
                 ((mythread_t)item)->attribute=malloc(sizeof(mythread_attr_t));
                 ((mythread_t)item)->attribute->attr=10;
-        } 
+        }
+ 
 	(*headp)->item=item;
 	(*headp)->next=NULL;
 	(*headp)->prev=NULL;
+
 }
 
 void mythread_enq(mythread_queue_t *headp,void *item) {
-	if(*headp==NULL) { 
+	if(*headp==NULL) {
 		mythread_q_init(headp,item);
 		return;
 	}
@@ -23,6 +25,13 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 		((mythread_t)item)->attribute->attr=10;
 	} 
 	while(temp->next !=NULL) {
+/*
+		if (((mythread_t)(temp->item))->attribute == NULL) {
+	                ((mythread_t)(temp->item))->attribute=malloc(sizeof(mythread_attr_t));
+	                ((mythread_t)(temp->item))->attribute->attr=99;
+
+		}
+*/		
 		if((((mythread_t)(temp->item))->attribute)->attr > (((mythread_t)item)->attribute)->attr) {
 			break;
 		}
@@ -30,9 +39,17 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 			temp=temp->next;
 		}						
 	}	
+	if (((mythread_t)(temp->item))->attribute == NULL) {
+                        ((mythread_t)(temp->item))->attribute=malloc(sizeof(mythread_attr_t));
+                        ((mythread_t)(temp->item))->attribute->attr=99;
+
+        }
+
 	if((((mythread_t)(temp->item))->attribute)->attr > (((mythread_t)item)->attribute)->attr && (temp!=*headp)) {
+		
 		temp = temp->prev;
 	}
+	
 	mythread_queue_t newNode=malloc(sizeof(struct mythread_queue));
 	if(temp == *headp ) {
 		if((((mythread_t)(temp->item))->attribute)->attr > (((mythread_t)item)->attribute)->attr) {
