@@ -90,8 +90,10 @@ void mythread_deq(mythread_queue_t* headp,void *item) {
 
 void* mythread_deq_prio(mythread_queue_t *headp) {
 	mythread_queue_t temp=*headp;
-	(*headp)->next->prev=NULL;
-        *headp=(*headp)->next;
+	if((*headp)->next!=NULL) {
+		(*headp)->next->prev=NULL;
+       	} 
+	*headp=(*headp)->next;
 	return temp->item;
 }
 
