@@ -124,6 +124,7 @@ void printQ(mythread_queue_t headp) {
 
 	printf("===========\n");
 }
+
 /*
 int main() {
 	mythread_t t1=malloc(sizeof(struct mythread));
@@ -139,7 +140,7 @@ int main() {
 	t3->attribute=malloc(sizeof(struct mythread_attr));
 	t4->attribute=malloc(sizeof(struct mythread_attr));
 	t1->attribute->attr=3;
-	t3->attribute->attr=4;
+	t3->attribute->attr=3;
 	t2->attribute=NULL;
 	t4->attribute->attr=12;
 	mythread_queue_t head=NULL;
