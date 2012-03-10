@@ -104,7 +104,7 @@ void *yieldThread4() {
 }
 
 int main() {
-	mythread_setconcurrency(1);
+	mythread_setconcurrency(3);
 	//mythread_t fake=malloc(sizeof(struct mythread));
 	//memset(fake,0,sizeof(struct mythread));
 	//mythread_q_init(mythread_readyq(),fake);
@@ -113,9 +113,25 @@ int main() {
         tid2 = malloc(sizeof(struct mythread));
         tid3 = malloc(sizeof(struct mythread));
         tid4 = malloc(sizeof(struct mythread));
-        mythread_create(&tid1,NULL,yieldThread1,NULL);
+
+	mythread_attr_t attr1;
+	mythread_attr_init(&attr1);
+	struct sched_param param1;
+	param1.__sched_priority = 3;
+	mythread_attr_setschedparam(&attr1,&param1);
+
+	mythread_attr_t attr2;
+	mythread_attr_init(&attr2);
+	struct sched_param param2;
+	param2.__sched_priority = 3;
+	mythread_attr_setschedparam(&attr2,&param2);
+
+
+        mythread_create(&tid1,&attr1,yieldThread1,NULL);
 	usleep(100);
-	mythread_create(&tid2,NULL,yieldThread2,NULL);
+
+
+	mythread_create(&tid2,&attr2,yieldThread2,NULL);
 	usleep(100);
 	//getMember(*(mythread_runq(),block)
         mythread_create(&tid3,NULL,yieldThread3,NULL);

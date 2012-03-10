@@ -1,24 +1,36 @@
 #include "mythread.h"
+#include <signal.h>
 #include "myqueue.h"
 
 int error_double_enq=0;
 void mythread_q_init(mythread_queue_t *headp,void *item) {
+	/*sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,SIGUSR1);
+	sigaddset(&set,SIGALRM);
+	sigprocmask(SIG_BLOCK,&set,NULL);*/
 	*headp=malloc(sizeof(struct mythread_queue));
 	if((((mythread_t)item)->attribute)==NULL) {
                 ((mythread_t)item)->attribute=malloc(sizeof(mythread_attr_t));
-                ((mythread_t)item)->attribute->attr=10;
+                ((mythread_t)item)->attribute->attr= DEFAULT_ATTR ;
         }
  
 	(*headp)->item=item;
 	(*headp)->next=NULL;
 	(*headp)->prev=NULL;
-
+	//sigprocmask(SIG_UNBLOCK,&set,NULL);
 }
 
 void mythread_enq(mythread_queue_t *headp,void *item) {
+	/*sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,SIGUSR1);
+	sigaddset(&set,SIGALRM);
+	sigprocmask(SIG_BLOCK,&set,NULL);*/
 	int count=0;
 	if(*headp==NULL) {
 		mythread_q_init(headp,item);
+		//sigprocmask(SIG_UNBLOCK,&set,NULL);
 		return;
 	}
 	if(mythread_inq(headp,item)) {
@@ -29,7 +41,7 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 	temp=*headp;
 	if((((mythread_t)item)->attribute)==NULL) {
 		((mythread_t)item)->attribute=malloc(sizeof(mythread_attr_t));
-		((mythread_t)item)->attribute->attr=10;
+		((mythread_t)item)->attribute->attr= DEFAULT_ATTR ;
 	} 
 	while(temp->next !=NULL) {
 /*
@@ -40,6 +52,7 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 		}
 */		
 		if((((mythread_t)(temp->item))->attribute)->attr > (((mythread_t)item)->attribute)->attr) {
+		
 			break;
 		}
 		else {
@@ -50,7 +63,7 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 	
 	if (((mythread_t)(temp->item))->attribute == NULL) {
                         ((mythread_t)(temp->item))->attribute=malloc(sizeof(mythread_attr_t));
-                        ((mythread_t)(temp->item))->attribute->attr=99;
+                        ((mythread_t)(temp->item))->attribute->attr= DEFAULT_ATTR;
 
         }
 
@@ -67,6 +80,7 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 			(*headp)->prev = newNode;
 			newNode->prev = NULL;
 			*headp = newNode;
+			//sigprocmask(SIG_UNBLOCK,&set,NULL);
 			return;
 		}
 	}
@@ -77,21 +91,34 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 	if(temp->next!=NULL)
 		temp->next->prev=newNode;
 	temp->next=newNode;
+//	sigprocmask(SIG_UNBLOCK,&set,NULL);
 	return;
 }
 
 int mythread_inq(mythread_queue_t *headp,void *item) {
+	/*sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,SIGUSR1);
+	sigaddset(&set,SIGALRM);
+	sigprocmask(SIG_BLOCK,&set,NULL);*/
 	mythread_queue_t temp=*headp;
 	while(temp!=NULL){
 		if(temp->item==item) {
+		//	sigprocmask(SIG_UNBLOCK,&set,NULL);
 			return TRUE;
 		}
 		temp=temp->next;
 	}
+	//sigprocmask(SIG_UNBLOCK,&set,NULL);
 	return FALSE;
 }
 
 void mythread_deq(mythread_queue_t* headp,void *item) {
+/*	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,SIGUSR1);
+	sigaddset(&set,SIGALRM);
+	sigprocmask(SIG_BLOCK,&set,NULL);*/
 	mythread_queue_t temp=*headp;
         while(temp!=NULL){
                 if(temp->item==item) {
@@ -106,21 +133,32 @@ void mythread_deq(mythread_queue_t* headp,void *item) {
 				if (temp->next != NULL)
 					temp->next->prev=temp->prev;
 				//free(temp);	
-			} 
+			}
+			//sigprocmask(SIG_UNBLOCK,&set,NULL);
 			return;
 		}
                 temp=temp->next;
         }
+	//sigprocmask(SIG_UNBLOCK,&set,NULL);
 	return;
 }
 
 void* mythread_deq_prio(mythread_queue_t *headp) {
+/*	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,SIGUSR1);
+	sigaddset(&set,SIGALRM);
+	sigprocmask(SIG_BLOCK,&set,NULL);*/
 	mythread_queue_t temp=*headp;
-	if((*headp)->next!=NULL) {
+	/*if((*headp)->next!=NULL) {
 		(*headp)->next->prev=NULL;
        	} 
-	*headp=(*headp)->next;
-	return temp->item;
+	*headp=(*headp)->next;*/
+	//sigprocmask(SIG_UNBLOCK,&set,NULL);
+	if(temp!=NULL)
+		return temp->item;
+	else
+		return NULL;
 }
 
 int printQ(mythread_queue_t headp) {
