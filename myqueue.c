@@ -1,5 +1,7 @@
 #include "mythread.h"
 #include "myqueue.h"
+
+int error_double_enq=0;
 void mythread_q_init(mythread_queue_t *headp,void *item) {
 	*headp=malloc(sizeof(struct mythread_queue));
 	if((((mythread_t)item)->attribute)==NULL) {
@@ -14,9 +16,14 @@ void mythread_q_init(mythread_queue_t *headp,void *item) {
 }
 
 void mythread_enq(mythread_queue_t *headp,void *item) {
+	int count=0;
 	if(*headp==NULL) {
 		mythread_q_init(headp,item);
 		return;
+	}
+	if(mythread_inq(headp,item)) {
+		error_double_enq++;
+		//write(1,"ERROR : enq of item already in q\n",strlen("ERROR : enq of item already in q\n"));
 	}
 	mythread_queue_t temp;
 	temp=*headp;
@@ -37,8 +44,10 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 		}
 		else {
 			temp=temp->next;
+			count++;
 		}						
-	}	
+	}
+	
 	if (((mythread_t)(temp->item))->attribute == NULL) {
                         ((mythread_t)(temp->item))->attribute=malloc(sizeof(mythread_attr_t));
                         ((mythread_t)(temp->item))->attribute->attr=99;
@@ -114,15 +123,22 @@ void* mythread_deq_prio(mythread_queue_t *headp) {
 	return temp->item;
 }
 
-void printQ(mythread_queue_t headp) {
+int printQ(mythread_queue_t headp) {
 	mythread_queue_t temp;
 	temp = headp;
+	int count=0;
 	while(temp!=NULL) {
-		printf("ThreadID : %d '%d'\n",((mythread_t)temp->item)->tid,((mythread_t)temp->item)->attribute->attr);
-		temp = temp->next;
+		count++;
+		if(((mythread_t)temp->item)->attribute != NULL) 
+			printf("contains ThreadID : %d '%d'\n",((mythread_t)temp->item)->tid,((mythread_t)temp->item)->attribute->attr);
+		else 
+			printf("contains ThreadID : %d '-1'\n",((mythread_t)temp->item)->tid);
+			
+			temp = temp->next;
 	}
 
 	printf("===========\n");
+	return count;
 }
 
 /*

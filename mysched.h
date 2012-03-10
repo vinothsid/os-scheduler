@@ -1,9 +1,13 @@
 #include <signal.h>
+#define print(string) write(1,string,strlen(string))
 /*
  * mysched.h -- a header for implementation of thread scheduler
  *
  */
 
+static int lll_lock(int*);
+static int lll_unlock(int*);
+static int set_resched_flag_all(mythread_queue_t *headp );
 /*
  * mythread_scheduler
  */
@@ -57,4 +61,5 @@ int mythread_attr_getschedparam(const mythread_attr_t *attr,
  */
 int mythread_attr_setschedparam(mythread_attr_t *attr,
 		const struct sched_param *param);
+
 

@@ -13,12 +13,19 @@
 #define TRUE 1
 #endif
 
+
 #include <pthread.h>
 #include <sys/times.h>
+#include <sys/syscall.h>
 #include "myqueue.h"
 #include "futex.h"
 
+#define VERBOSE 0
+//#define DEBUG 1
+
 #define DEFAULT_ATTR 10	/* Default value of sched_priority */
+#define BLOCKED 2
+#define getMember(node,member) ((mythread_t)((node)->item))->member
 
 typedef struct mythread_attr { /* thread attributes */
   int attr;                    /* Use for sched_priority */
