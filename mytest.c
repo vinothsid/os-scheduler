@@ -7,7 +7,7 @@ void *yieldThread1() {
 	int count = 100;
 	while(count--) {	
 		write(1,"thread1\n",strlen("thread1\n"));
-		usleep(1000);
+		usleep(10000);
 	}
 	//printf("thread1 id: %d\n",(pid_t) syscall(SYS_gettid) );
 	
@@ -116,19 +116,21 @@ int main() {
 
 	mythread_attr_t attr1;
 	mythread_attr_init(&attr1);
+	attr1.attr=6;
 	struct sched_param param1;
-	param1.__sched_priority = 3;
-	mythread_attr_setschedparam(&attr1,&param1);
+	param1.__sched_priority = 6;
+	//mythread_attr_setschedparam(&attr1,&param1);
 
 	mythread_attr_t attr2;
 	mythread_attr_init(&attr2);
+	attr2.attr=3;
 	struct sched_param param2;
 	param2.__sched_priority = 3;
-	mythread_attr_setschedparam(&attr2,&param2);
+	//mythread_attr_setschedparam(&attr2,&param2);
 
 
         mythread_create(&tid1,&attr1,yieldThread1,NULL);
-	usleep(100);
+	usleep(1000);
 
 
 	mythread_create(&tid2,&attr2,yieldThread2,NULL);

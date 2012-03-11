@@ -26,199 +26,184 @@ void print_queues() {
 }
 static void mythread_sighandler(int sig,siginfo_t *siginfo, void *ucp) {
 	mythread_t self=mythread_self();
+        if(self==NULL) 
+		return;
 	if(sig==SIGALRM) {
 #ifdef VERBOSE
                 printf("SIGALRM received in %ld\n",self->tid );
 #endif
 
-		self->state|=ALARM;
-		self->reschedule=1;
-	} else {
+                self->state|=ALARM;
+                self->reschedule=1;
+        } else {
 #ifdef VERBOSE
                 printf("SIGALRM received in %ld\n",self->tid );
 #endif
 
-		self->state|=SIGUSR;
-		self->reschedule=1;
-	}
-	if(mythread_tryenter_kernel()==TRUE) {
+                self->state|=SIGUSR;
+                self->reschedule=1;
+        }
+        if(mythread_tryenter_kernel()==TRUE) {
 #ifdef VERBOSE
                 printf("Signal handler entered kernel\n" );
 #endif
 
-		if(sig==SIGALRM) {
-			mythread_queue_t ptr=*mythread_runq();
-			while(ptr!=NULL) {
-				if(getMember(ptr,tid) != self->tid) {
+                if(sig==SIGALRM) {
+                        mythread_queue_t ptr=*mythread_runq();
+                        while(ptr!=NULL) {
+                                if(getMember(ptr,tid) != self->tid) {
 #ifdef VERBOSE
-				printf("Sending SIGUSR to %ld\n",getMember(ptr,tid) );
-	#endif
-					syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
+                                printf("Sending SIGUSR to %ld\n",getMember(ptr,tid) );
+        #endif
+                                        syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
 
-				}
-				ptr = ptr->next;
-			}
-	
-		}
-		if(mythread_scheduler()==TRUE ) {
+                                }
+                                ptr = ptr->next;
+                        }
+        
+                }
+                if(mythread_scheduler()==TRUE) {
 
-			mythread_queue_t* readyq=mythread_readyq();
-			mythread_block(readyq,BLOCKED);
+                        mythread_queue_t* readyq=mythread_readyq();
+                        mythread_block(readyq,BLOCKED);
 			self->state &=~BLOCKED;
-		} else {
-			mythread_leave_kernel_nonpreemptive();
-		}
+                } else {
+                        mythread_leave_kernel_nonpreemptive();
+                }
 
-	} 
-
-}
-
-void debugPrint() {
-       mythread_queue_t ptr=*mythread_runq();
-	while(ptr!=NULL) {
-			if(!(getMember(ptr,state)& BLOCKED) && getMember(ptr,block).count == -1) {
-		//		perror("its wrong here its wrong here ");
-				print("BIG BIG ERROR ERRRRRRR ERRRRRR ERRRRRR ERRRRRRRR ERRRRRRRR\n");
-//				exit(0);
-			}
-
-			ptr = ptr->next;
-	}
+        } 
 
 }
+
+
 
 void mythread_leave_kernel(void) {
-	mythread_t self=mythread_self();
-	int exitflag;
-#ifdef VERBOSE
-	if (!(self->state & BLOCKED))
-		debugPrint();
-#endif
-	do {
-		if((self->state & BLOCKED) ) {
-			mythread_leave_kernel_nonpreemptive();
-			return;
-		}
-		exitflag=0;
-		if(self->reschedule == 1) {
-			if(self->state & ALARM) {
-				mythread_queue_t ptr=*mythread_runq();
-				while(ptr!=NULL) {
-					if(getMember(ptr,tid) != self->tid) {
-	#ifdef VERBOSE
-					printf("LK: Sending SIGUSR to %ld\n",getMember(ptr,tid) );
-		#endif
-						syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
+//      mythread_leave_kernel_nonpreemptive();
+        mythread_t self=mythread_self();
+        int exitflag;
+        do {
+                exitflag=0;
+                if((self->state & BLOCKED) ) {
+                        mythread_leave_kernel_nonpreemptive();
+                        return;
+                }
 
-					}
-					ptr = ptr->next;
-				}
-		
-			}
-			
-			if(mythread_scheduler() == TRUE && mythread_inq(mythread_runq(),self) ) {
-				mythread_queue_t* readyq=mythread_readyq();
-                 		mythread_block(readyq,BLOCKED);
+                if(self->reschedule == 1) {
+                        if(self->state & ALARM) {
+                                mythread_queue_t ptr=*mythread_runq();
+                                while(ptr!=NULL) {
+                                        if(getMember(ptr,tid) != self->tid) {
+        #ifdef VERBOSE
+                                        printf("LK: Sending SIGUSR to %ld\n",getMember(ptr,tid) );
+                #endif
+                                                syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
+
+                                        }
+                                        ptr = ptr->next;
+                                }
+                
+                        }
+                        
+                        if(mythread_scheduler() == TRUE ) {
+                                mythread_queue_t* readyq=mythread_readyq();
+                                mythread_block(readyq,BLOCKED);
 				self->state &=~BLOCKED;
-			} else {
+                        } else {
 
-				mythread_leave_kernel_nonpreemptive();
-			}
-		} else {
-			mythread_queue_t ptr=*mythread_runq();
-			while(ptr!=NULL) {
-				if(getMember(ptr,tid) != self->tid && getMember(ptr,reschedule) == 1) {
+                                mythread_leave_kernel_nonpreemptive();
+                        }
+                } else {
+                        mythread_queue_t ptr=*mythread_runq();
+                        while(ptr!=NULL) {
+                                if(getMember(ptr,tid) != self->tid && getMember(ptr,reschedule) == 1) {
 #ifdef VERBOSE
-			printf("Sending SIGUSR to reschedulable outside of sigalrm condition %ld\n",getMember(ptr,tid) );
+                        printf("Sending SIGUSR to reschedulable outside of sigalrm condition %ld\n",getMember(ptr,tid) );
 #endif
-					//syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
+                                        syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
 
-				}
-				ptr = ptr->next;
-			}
+                                }
+                                ptr = ptr->next;
+                        }
 #ifdef DEBUG
                                 //print("SH: Scheduler returns true\n");
                                 print_queues();
 #endif   
-			mythread_leave_kernel_nonpreemptive();
-		}
-		if(self->reschedule!=0) {
-			if(mythread_tryenter_kernel() == TRUE) {
-				//self->reschedule=0;
-				exitflag=1;
-			}
-		}
+                        mythread_leave_kernel_nonpreemptive();
+                }
+                if(self->reschedule!=0) {
+                        if(mythread_tryenter_kernel() == TRUE) {
+                                //self->reschedule=0;
+                                exitflag=1;
+                        }
+                }
 
-	} while(exitflag == 1);
+        } while(exitflag == 1);
 }
 
 static int mythread_scheduler(void) {
-	mythread_t self=mythread_self();
-	if(*mythread_readyq()!=NULL && mythread_inq(mythread_runq(),self) && !(self->state & BLOCKED) ) {
-		self->state &=~ALARM;
-		self->state &=~SIGUSR;
-		self->reschedule=0;
+        mythread_t self=mythread_self();
+        self->state &=~ALARM;
+        self->state &=~SIGUSR;
+        self->reschedule=0;
+        if(*mythread_readyq()!=NULL && mythread_inq(mythread_runq(),self)) {
 
-		mythread_t highPrio = mythread_deq_prio(mythread_readyq());
-		if( self->attribute->attr < highPrio->attribute->attr ) 
-			return 0;
-		else
-			return 1;
-	} else {
-		self->state &=~ALARM;
-		self->state &=~SIGUSR;
-		self->reschedule=0;
-		return 0;
-	}
+                mythread_t highPrio = mythread_deq_prio(mythread_readyq());
+                if(self->attribute != NULL && self->attribute->attr < highPrio->attribute->attr ) 
+                        return 0;
+                else
+                        return 1;
+        } else {
+                return 0;
+        }
 }
 
 
 void mythread_init_sched(void) {
-	static int count =1;
+        static int count =1;
 
-//	printf("init sched called in %ld\n",mythread_self());	
-	if(!INIT_SCHED) {
-//		printf("init sched called in %ld\n",mythread_self());	
-		alrm_struct=malloc(sizeof(struct itimerval));
-		(alrm_struct->it_interval).tv_sec=0;
-		(alrm_struct->it_interval).tv_usec=10000;
-		(alrm_struct->it_value).tv_sec=0;
-		(alrm_struct->it_value).tv_usec=10000;
-		setitimer(ITIMER_REAL,alrm_struct,NULL);
-		INIT_SCHED=1;
-	}
+//      printf("init sched called in %ld\n",mythread_self());   
+        if(!INIT_SCHED) {
+//              printf("init sched called in %ld\n",mythread_self());   
+                alrm_struct=malloc(sizeof(struct itimerval));
+                (alrm_struct->it_interval).tv_sec=0;
+                (alrm_struct->it_interval).tv_usec=10000;
+                (alrm_struct->it_value).tv_sec=0;
+                (alrm_struct->it_value).tv_usec=10000;
+                setitimer(ITIMER_REAL,alrm_struct,NULL);
+                INIT_SCHED=1;
+        }
 #ifdef VERBOSE
-		write(1,"init sched\n",strlen("init sched\n"));
+                write(1,"init sched\n",strlen("init sched\n"));
 #endif
-		memset(&alrm_handler,0,sizeof(alrm_handler));
-		sigemptyset(&alrm_handler.sa_mask);
-		sigaddset(&alrm_handler.sa_mask,SIGALRM);
-		sigaddset(&alrm_handler.sa_mask,SIGUSR1);
+                memset(&alrm_handler,0,sizeof(alrm_handler));
+                sigemptyset(&alrm_handler.sa_mask);
+                sigaddset(&alrm_handler.sa_mask,SIGALRM);
+                sigaddset(&alrm_handler.sa_mask,SIGUSR1);
 
-		
-		alrm_handler.sa_flags=SA_RESTART;
-		alrm_handler.sa_handler=mythread_sighandler;
-		sigaction(SIGALRM,&alrm_handler,NULL);
-		memset(&only_block,0,sizeof(only_block));
-		sigemptyset(&only_block.sa_mask);
-		sigaddset(&only_block.sa_mask,SIGALRM);
-		sigaddset(&only_block.sa_mask,SIGUSR1);
-		only_block.sa_flags=SA_RESTART;
-		only_block.sa_handler=mythread_sighandler;
-		sigaction(SIGUSR1,&only_block,NULL);
-		//sigprocmask(SIG_UNBLOCK,&alrm_handler.sa_mask,NULL);
-		//mythread_exit(NULL);
-	//mythread_enter_kernel();
-	//mythread_block(mythread_readyq(),BLOCKED);
-	//write(1,"exit init sched\n",strlen("exit init sched\n"));
-	
+
+                alrm_handler.sa_flags=SA_RESTART;
+                alrm_handler.sa_handler=mythread_sighandler;
+                sigaction(SIGALRM,&alrm_handler,NULL);
+                memset(&only_block,0,sizeof(only_block));
+                sigemptyset(&only_block.sa_mask);
+                sigaddset(&only_block.sa_mask,SIGALRM);
+                sigaddset(&only_block.sa_mask,SIGUSR1);
+                only_block.sa_flags=SA_RESTART;
+                only_block.sa_handler=mythread_sighandler;
+                sigaction(SIGUSR1,&only_block,NULL);
+                sigprocmask(SIG_UNBLOCK,&alrm_handler.sa_mask,NULL);
+                //mythread_exit(NULL);
+        //mythread_enter_kernel();
+        //mythread_block(mythread_readyq(),BLOCKED);
+        //write(1,"exit init sched\n",strlen("exit init sched\n"));
+        
 }
 
 void mythread_exit_sched(void) {
 #ifdef VERBOSE
-	write(1,"exit sched\n",strlen("init sched\n"));
-	
+        write(1,"exit sched\n",strlen("init sched\n"));
 #endif
+
 #ifdef VERBOSE
                 write(1,"init sched\n",strlen("init sched\n"));
 #endif
@@ -237,6 +222,7 @@ void mythread_exit_sched(void) {
                 only_block.sa_flags=SA_RESTART;
                 only_block.sa_handler=SIG_IGN;
                 sigaction(SIGUSR1,&only_block,NULL);
+                sigprocmask(SIG_BLOCK,&alrm_handler.sa_mask,NULL);
 
 }
 
@@ -246,13 +232,13 @@ void mythread_exit_sched(void) {
  * by a given implementation.
  */
 int mythread_attr_init(mythread_attr_t *attr) {
-	if(attr != NULL) {
-		attr->attr = DEFAULT_ATTR ;
-		return 0;
-	} else {
-		return -1;
-	}
-	
+        if(attr != NULL) {
+                attr->attr = DEFAULT_ATTR ;
+                return 0;
+        } else {
+                return -1;
+        }
+        
 
 }
 
@@ -260,13 +246,13 @@ int mythread_attr_init(mythread_attr_t *attr) {
  * pthread_attr_destroy - destroy a  thread  attributes object
  */
 int mythread_attr_destroy(mythread_attr_t *attr) {
-	if(attr != NULL) {
-		attr->attr = DEFAULT_ATTR ;
-		return 0;
-	} else {
-		return -1;
-	}
-	
+        if(attr != NULL) {
+                attr->attr = DEFAULT_ATTR ;
+                return 0;
+        } else {
+                return -1;
+        }
+        
 }
 
 /*
@@ -275,12 +261,12 @@ int mythread_attr_destroy(mythread_attr_t *attr) {
  */
 int mythread_attr_getschedparam(const mythread_attr_t *attr,
                 struct sched_param *param) {
-	if(attr!=NULL) {
-		param->__sched_priority = attr->attr;
-		return 0;
-	} else {
-		return -1;
-	}
+        if(attr!=NULL) {
+                param->__sched_priority = attr->attr;
+                return 0;
+        } else {
+                return -1;
+        }
 }
 
 /*
@@ -289,12 +275,12 @@ int mythread_attr_getschedparam(const mythread_attr_t *attr,
  */
 int mythread_attr_setschedparam(mythread_attr_t *attr,const struct sched_param *param) {
 
-	if(attr != NULL && param != NULL && param->__sched_priority >=0 && param->__sched_priority < 100) {
-		attr->attr = param->__sched_priority ;
-		return 0;	
-	} else {
-		return -1;
-	}
+        if(attr != NULL && param != NULL && param->__sched_priority >=0 && param->__sched_priority < 100) {
+                attr->attr = param->__sched_priority ;
+                return 0;       
+        } else {
+                return -1;
+        }
 }
 
 
@@ -319,4 +305,3 @@ static int lll_lock(int* lll_val) {
 static int lll_unlock(int* lll_val) {
         *lll_val=1;
 }
-
