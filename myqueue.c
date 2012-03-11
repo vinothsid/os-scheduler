@@ -42,7 +42,7 @@ void mythread_enq(mythread_queue_t *headp,void *item) {
 	if((((mythread_t)item)->attribute)==NULL) {
 		((mythread_t)item)->attribute=malloc(sizeof(mythread_attr_t));
 		((mythread_t)item)->attribute->attr= DEFAULT_ATTR ;
-	} 
+	} 		
 	while(temp->next !=NULL) {
 /*
 		if (((mythread_t)(temp->item))->attribute == NULL) {

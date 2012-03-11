@@ -60,10 +60,11 @@ static void mythread_sighandler(int sig,siginfo_t *siginfo, void *ucp) {
 			}
 	
 		}
-		if(mythread_scheduler()==TRUE) {
+		if(mythread_scheduler()==TRUE ) {
 
 			mythread_queue_t* readyq=mythread_readyq();
 			mythread_block(readyq,BLOCKED);
+			self->state &=~BLOCKED;
 		} else {
 			mythread_leave_kernel_nonpreemptive();
 		}
@@ -72,13 +73,32 @@ static void mythread_sighandler(int sig,siginfo_t *siginfo, void *ucp) {
 
 }
 
+void debugPrint() {
+       mythread_queue_t ptr=*mythread_runq();
+	while(ptr!=NULL) {
+			if(!(getMember(ptr,state)& BLOCKED) && getMember(ptr,block).count == -1) {
+		//		perror("its wrong here its wrong here ");
+				print("BIG BIG ERROR ERRRRRRR ERRRRRR ERRRRRR ERRRRRRRR ERRRRRRRR\n");
+//				exit(0);
+			}
 
+			ptr = ptr->next;
+	}
+
+}
 
 void mythread_leave_kernel(void) {
-//	mythread_leave_kernel_nonpreemptive();
 	mythread_t self=mythread_self();
 	int exitflag;
+#ifdef VERBOSE
+	if (!(self->state & BLOCKED))
+		debugPrint();
+#endif
 	do {
+		if((self->state & BLOCKED) ) {
+			mythread_leave_kernel_nonpreemptive();
+			return;
+		}
 		exitflag=0;
 		if(self->reschedule == 1) {
 			if(self->state & ALARM) {
@@ -96,9 +116,10 @@ void mythread_leave_kernel(void) {
 		
 			}
 			
-			if(mythread_scheduler() == TRUE) {
+			if(mythread_scheduler() == TRUE && mythread_inq(mythread_runq(),self) ) {
 				mythread_queue_t* readyq=mythread_readyq();
                  		mythread_block(readyq,BLOCKED);
+				self->state &=~BLOCKED;
 			} else {
 
 				mythread_leave_kernel_nonpreemptive();
@@ -110,7 +131,7 @@ void mythread_leave_kernel(void) {
 #ifdef VERBOSE
 			printf("Sending SIGUSR to reschedulable outside of sigalrm condition %ld\n",getMember(ptr,tid) );
 #endif
-					syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
+					//syscall(SYS_tgkill,getpid(),getMember(ptr,tid),SIGUSR1);
 
 				}
 				ptr = ptr->next;
@@ -133,10 +154,10 @@ void mythread_leave_kernel(void) {
 
 static int mythread_scheduler(void) {
 	mythread_t self=mythread_self();
-	self->state &=~ALARM;
-	self->state &=~SIGUSR;
-	self->reschedule=0;
-	if(*mythread_readyq()!=NULL && mythread_inq(mythread_runq(),self)) {
+	if(*mythread_readyq()!=NULL && mythread_inq(mythread_runq(),self) && !(self->state & BLOCKED) ) {
+		self->state &=~ALARM;
+		self->state &=~SIGUSR;
+		self->reschedule=0;
 
 		mythread_t highPrio = mythread_deq_prio(mythread_readyq());
 		if( self->attribute->attr < highPrio->attribute->attr ) 
@@ -144,6 +165,9 @@ static int mythread_scheduler(void) {
 		else
 			return 1;
 	} else {
+		self->state &=~ALARM;
+		self->state &=~SIGUSR;
+		self->reschedule=0;
 		return 0;
 	}
 }
@@ -161,6 +185,8 @@ void mythread_init_sched(void) {
 		(alrm_struct->it_value).tv_sec=0;
 		(alrm_struct->it_value).tv_usec=10000;
 		setitimer(ITIMER_REAL,alrm_struct,NULL);
+		INIT_SCHED=1;
+	}
 #ifdef VERBOSE
 		write(1,"init sched\n",strlen("init sched\n"));
 #endif
@@ -180,10 +206,8 @@ void mythread_init_sched(void) {
 		only_block.sa_flags=SA_RESTART;
 		only_block.sa_handler=mythread_sighandler;
 		sigaction(SIGUSR1,&only_block,NULL);
-		INIT_SCHED=1;
 		//sigprocmask(SIG_UNBLOCK,&alrm_handler.sa_mask,NULL);
 		//mythread_exit(NULL);
-	}
 	//mythread_enter_kernel();
 	//mythread_block(mythread_readyq(),BLOCKED);
 	//write(1,"exit init sched\n",strlen("exit init sched\n"));
@@ -193,7 +217,27 @@ void mythread_init_sched(void) {
 void mythread_exit_sched(void) {
 #ifdef VERBOSE
 	write(1,"exit sched\n",strlen("init sched\n"));
+	
 #endif
+#ifdef VERBOSE
+                write(1,"init sched\n",strlen("init sched\n"));
+#endif
+
+                memset(&alrm_handler,0,sizeof(alrm_handler));
+                sigemptyset(&alrm_handler.sa_mask);
+                sigaddset(&alrm_handler.sa_mask,SIGALRM);
+                sigaddset(&alrm_handler.sa_mask,SIGUSR1);
+                alrm_handler.sa_flags=SA_RESTART;
+                alrm_handler.sa_handler=SIG_IGN;
+                sigaction(SIGALRM,&alrm_handler,NULL);
+                memset(&only_block,0,sizeof(only_block));
+                sigemptyset(&only_block.sa_mask);
+                sigaddset(&only_block.sa_mask,SIGALRM);
+                sigaddset(&only_block.sa_mask,SIGUSR1);
+                only_block.sa_flags=SA_RESTART;
+                only_block.sa_handler=SIG_IGN;
+                sigaction(SIGUSR1,&only_block,NULL);
+
 }
 
 /*

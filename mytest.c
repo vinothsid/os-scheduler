@@ -104,7 +104,7 @@ void *yieldThread4() {
 }
 
 int main() {
-	mythread_setconcurrency(3);
+	mythread_setconcurrency(1);
 	//mythread_t fake=malloc(sizeof(struct mythread));
 	//memset(fake,0,sizeof(struct mythread));
 	//mythread_q_init(mythread_readyq(),fake);

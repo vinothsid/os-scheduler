@@ -22,10 +22,10 @@
 
 //#define VERBOSE 1
 #define DEBUG 1
-#define ALARM 4
+#define ALARM 32
 #define SIGUSR 8
 #define DEFAULT_ATTR 10	/* Default value of sched_priority */
-#define BLOCKED 2
+#define BLOCKED 16
 #define getMember(node,member) ((mythread_t)((node)->item))->member
 
 typedef struct mythread_attr { /* thread attributes */
