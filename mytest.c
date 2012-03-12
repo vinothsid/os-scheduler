@@ -5,9 +5,22 @@ mythread_t tcb1;
 int tid_global;
 void *yieldThread1() {
 	int count = 100;
+        struct sched_param param1,param2;
+        param1.__sched_priority = 7;
+        mythread_attr_t attr1;
 	while(count--) {	
 		write(1,"thread1\n",strlen("thread1\n"));
-		usleep(10000);
+		if(count == 50) {
+				mythread_enter_kernel();
+	        		mythread_attr_setschedparam(mythread_self()->attribute,&param1);				 
+				mythread_attr_getschedparam(mythread_self()->attribute,&param2);
+				printf("Priority : %d\n",param2.__sched_priority);
+			
+//				print_queues();
+				mythread_leave_kernel_nonpreemptive();
+
+		}
+		usleep(1000);
 	}
 	//printf("thread1 id: %d\n",(pid_t) syscall(SYS_gettid) );
 	
@@ -116,21 +129,21 @@ int main() {
 
 	mythread_attr_t attr1;
 	mythread_attr_init(&attr1);
-	attr1.attr=6;
+//	attr1.attr=3;
 	struct sched_param param1;
-	param1.__sched_priority = 6;
-	//mythread_attr_setschedparam(&attr1,&param1);
+	param1.__sched_priority = 3;
+	mythread_attr_setschedparam(&attr1,&param1);
 
 	mythread_attr_t attr2;
 	mythread_attr_init(&attr2);
-	attr2.attr=3;
+//	attr2.attr=6;
 	struct sched_param param2;
 	param2.__sched_priority = 3;
-	//mythread_attr_setschedparam(&attr2,&param2);
+	mythread_attr_setschedparam(&attr2,&param2);
 
 
         mythread_create(&tid1,&attr1,yieldThread1,NULL);
-	usleep(1000);
+	usleep(100);
 
 
 	mythread_create(&tid2,&attr2,yieldThread2,NULL);
@@ -153,6 +166,13 @@ int main() {
 //	mythread_enter_kernel();
 //	mythread_unblock(mythread_readyq(),2);
 	//mythread_unblock(mythread_readyq(),2);
+	//
+        mythread_join(tid1,NULL);
+        mythread_join(tid2,NULL);
+        mythread_join(tid3,NULL);
+        mythread_join(tid4,NULL);
+
+//	printSigUserCount();
         mythread_exit(NULL);
 
 }

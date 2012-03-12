@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +9,7 @@
 #include <limits.h>
 
 /* Number of threads to start */
-#define NTHREADS        2
+#define NTHREADS        10
 #define SETCONCURRENCY  1
 
 #define MYLIMIT 50000
@@ -31,7 +30,7 @@ void *thread_func(void *arg)
 
         while(1) {
                 mythread_mutex_lock(&mymutex);
-                printf("in side the mutex\n gcount : %d\n", gcount);
+       //         printf("in side the mutex\n gcount : %d\n", gcount);
                 if (gcount < MYLIMIT) {
                         /* Delay to encourage preemptions */
                         for(i = 0; i < INT_MAX/1000; i++);
@@ -41,7 +40,7 @@ void *thread_func(void *arg)
                         mythread_mutex_unlock(&mymutex);
                        break;
                 }
-               printf("outside the mutex\n gcount : %d\n", gcount);
+               printf("====================================== gcount : %d\n", gcount);
         }
 
 //      mythread_mutex_lock(&mymutex);
@@ -76,9 +75,9 @@ int main()
 
         mythread_t me = mythread_self();
 	usleep(100);
-//      	mythread_mutex_lock(&mymutex);
+      //	mythread_mutex_lock(&mymutex);
       	printf("In main_func, I am: %ld\n", (long int)me->tid);
-//      	mythread_mutex_unlock(&mymutex);
+      	//mythread_mutex_unlock(&mymutex);
 	printf("outside main\n");
       for (i = 0; i < NTHREADS; i++) {
                 mythread_mutex_lock(&mymutex);

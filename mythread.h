@@ -21,7 +21,7 @@
 #include "futex.h"
 
 //#define VERBOSE 1
-#define DEBUG 1
+//#define DEBUG 1
 #define ALARM 32
 #define SIGUSR 8
 #define DEFAULT_ATTR 10	/* Default value of sched_priority */
