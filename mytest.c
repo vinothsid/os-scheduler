@@ -1,20 +1,23 @@
 #include "mythread.h"
 #include <signal.h>
 
-mythread_t tcb1;
-int tid_global;
-void *yieldThread1() {
-	int count = 100;
-        struct sched_param param1,param2;
-        param1.__sched_priority = 7;
-        mythread_attr_t attr1;
+mythread_t tid1,tid2,tid3,tid4;
+mythread_attr_t *attr1,*attr2,*attr3,*attr4;
+struct sched_param param1,param2,param3,param4;
+
+void *thread1(void *changePrio ) {
+	int flag = *(int *)changePrio;
+	int count = 50;
+        struct sched_param param1,oldprio,newprio;
+        param1.__sched_priority = 99;
 	while(count--) {	
 		write(1,"thread1\n",strlen("thread1\n"));
-		if(count == 50) {
+		if(count == 25 && flag == 1) {
 				mythread_enter_kernel();
-	        		mythread_attr_setschedparam(mythread_self()->attribute,&param1);				 
-				mythread_attr_getschedparam(mythread_self()->attribute,&param2);
-				printf("Priority : %d\n",param2.__sched_priority);
+				mythread_attr_getschedparam(attr1,&oldprio);
+	        		mythread_attr_setschedparam(attr1,&param1);				 
+				mythread_attr_getschedparam(attr1,&newprio);
+				printf("Priority of thread1 changed from %d to : %d\n",oldprio.__sched_priority,newprio.__sched_priority);
 			
 //				print_queues();
 				mythread_leave_kernel_nonpreemptive();
@@ -22,155 +25,143 @@ void *yieldThread1() {
 		}
 		usleep(1000);
 	}
-	//printf("thread1 id: %d\n",(pid_t) syscall(SYS_gettid) );
-	
-/*	while(*(mythread_readyq())==NULL || (*mythread_readyq())->next == NULL ) {
-		write(1,"1 spinning\n",strlen("1 spinning\n")); 
-		usleep(10000);
-	}
-*/
-//	tid_global = mythread_self()->tid;
-//	mythread_enter_kernel();
-//	mythread_t *readyQ = mythread_readyq();
-//	mythread_block(readyQ,BLOCKED);
-//	tcb1 = mythread_self();
-//	sleep(1);
-//	futex_down(&(mythread_self()->block));
-//	usleep(209000);
-	write(1,"thread11\n",strlen("thread11\n"));
+	write(1,"thread1 finished\n",strlen("thread1 finished\n"));
 }
 
-int findNumThr(mythread_t headp) {
-	mythread_queue_t tmp = *(mythread_runq());
-	int count=0;
-	while(tmp!=NULL) {
-		count++;
-		tmp = tmp->next;
-	}
-	return count;
-}
+void *thread2() {
 
-void *yieldThread2() {
-
-        int count = 100;
+        int count = 50;
         while(count--) {
                 write(1,"thread2\n",strlen("thread1\n"));
                 usleep(1000);
         }
-
-/*	write(1,"thread2\n",strlen("thread1\n"));
-	printf("thread2 id: %d\n",(pid_t) syscall(SYS_gettid) );
-
-	while(tid_global == 0);*/
-//	syscall(SYS_tgkill,getpid(),tid_global,SIGUSR1);
-//	syscall(SYS_tgkill,-1,(pid_t) syscall(SYS_gettid),SIGUSR1);
-
-//	mythread_t runq = *(mythread_runq());
-//	while(findNumThr(runq) <2) ;
-//	mythread_enter_kernel();
-//	mythread_deq(mythread_runq(),tcb1);
-//	mythread_enq(mythread_readyq(),tcb1);
-//	mythread_leave_kernel();
-/*	while(*(mythread_readyq())==NULL || (*mythread_readyq())->next == NULL ) {
-		write(1,"2 spinning\n",strlen("1 spinning\n")); 
-		mythread_t runq = *(mythread_runq());
-		printf("Num threads in runQ is : %d\n",findNumThr(runq));
-		mythread_t readyq = *(mythread_readyq());
-		printf("Num threads in readyQ is : %d\n",findNumThr(readyq));
-		usleep(10000);
-	}
-*/
-//	usleep(209000);
-	write(1,"thread22\n",strlen("thread12\n"));
+	write(1,"thread2 finished\n",strlen("thread2 finished\n"));
 }
 
-void *yieldThread3() {
+void *thread3() {
 
-        int count = 100;
+        int count = 50;
         while(count--) {
                 write(1,"thread3\n",strlen("thread1\n"));
                 usleep(1000);
         }
-/*
-	write(1,"thread3\n",strlen("thread1\n"));
-	printf("thread3 id: %d\n",(pid_t) syscall(SYS_gettid) );
-*/	
-//	usleep(209000);
-	write(1,"thread33\n",strlen("thread12\n"));
+	write(1,"thread3 finished\n",strlen("thread3 finished\n"));
 }
-void *yieldThread4() {
+void *thread4() {
 
-        int count = 100;
+        int count = 50;
         while(count--) {
-                write(1,"thread4\n",strlen("thread1\n"));
+                write(1,"thread4\n",strlen("thread4\n"));
                 usleep(1000);
         }
 
-/*
-	write(1,"thread4\n",strlen("thread1\n"));
-	printf("thread4 id: %d\n",(pid_t) syscall(SYS_gettid) );
-
-	usleep(209000);
-*/
-	write(1,"thread44\n",strlen("thread12\n"));
+	write(1,"thread4 finished\n",strlen("thread4 finished\n"));
 
 }
 
+void testCase(int concurrency,int prio1,int prio2,int prio3,int prio4,int changePrioDynamic ) {
+
+	mythread_setconcurrency(concurrency);
+	mythread_attr_t *pr1 = NULL;
+	mythread_attr_t *pr2 = NULL;
+	mythread_attr_t *pr3 = NULL;
+	mythread_attr_t *pr4 = NULL;
+
+
+	if (prio1 != 10 ) {
+		mythread_attr_init(attr1);
+		param1.__sched_priority = prio1;
+		mythread_attr_setschedparam(attr1,&param1);
+		pr1 = attr1;	
+	}
+
+	if(prio2 != 10) {	
+		mythread_attr_init(attr2);
+		param2.__sched_priority = prio2;
+		mythread_attr_setschedparam(attr2,&param2);
+		pr2 = attr2;	
+	}
+	if(prio3 != 10) {	
+		mythread_attr_init(attr3);
+		param3.__sched_priority = prio3;
+		mythread_attr_setschedparam(attr3,&param3);
+		pr3 = attr3;	
+	}
+	if(prio4 != 10) {	
+		mythread_attr_init(attr4);
+		param4.__sched_priority = prio4;
+		mythread_attr_setschedparam(attr4,&param4);
+		pr4 = attr4;	
+	}
+        mythread_create(&tid1,pr1,thread1,&changePrioDynamic);
+	usleep(100);
+	mythread_create(&tid2,pr2,thread2,NULL);
+	usleep(100);
+        mythread_create(&tid3,pr3,thread3,NULL);
+	usleep(100);
+        mythread_create(&tid4,pr4,thread4,NULL);
+
+        mythread_join(tid1,NULL);
+        mythread_join(tid2,NULL);
+        mythread_join(tid3,NULL);
+        mythread_join(tid4,NULL);
+
+	write(1,"TEST COMPLETE\n",strlen("TEST COMPLETE\n"));
+}
+
 int main() {
-	mythread_setconcurrency(1);
-	//mythread_t fake=malloc(sizeof(struct mythread));
-	//memset(fake,0,sizeof(struct mythread));
-	//mythread_q_init(mythread_readyq(),fake);
-        mythread_t tid1,tid2,tid3,tid4;
+
+//	mythread_q_init(mythread_readyq(),fake);
         tid1 = malloc(sizeof(struct mythread));
         tid2 = malloc(sizeof(struct mythread));
         tid3 = malloc(sizeof(struct mythread));
         tid4 = malloc(sizeof(struct mythread));
 
-	mythread_attr_t attr1;
-	mythread_attr_init(&attr1);
-//	attr1.attr=3;
-	struct sched_param param1;
-	param1.__sched_priority = 3;
-	mythread_attr_setschedparam(&attr1,&param1);
-
-	mythread_attr_t attr2;
-	mythread_attr_init(&attr2);
-//	attr2.attr=6;
-	struct sched_param param2;
-	param2.__sched_priority = 3;
-	mythread_attr_setschedparam(&attr2,&param2);
-
-
-        mythread_create(&tid1,&attr1,yieldThread1,NULL);
-	usleep(100);
-
-
-	mythread_create(&tid2,&attr2,yieldThread2,NULL);
-	usleep(100);
-	//getMember(*(mythread_runq(),block)
-        mythread_create(&tid3,NULL,yieldThread3,NULL);
-	usleep(100);
-        mythread_create(&tid4,NULL,yieldThread4,NULL);
-/*
-        mythread_mutex_destroy(&lock);
-        mythread_mutex_init(&lock,NULL);
-        mythread_create(&tid1,NULL,yieldThread1,NULL);
-        mythread_create(&tid2,NULL,yieldThread2,NULL);
-        mythread_join(tid1,NULL);
-        mythread_join(tid2,NULL);
-*/
-//	sleep(1);
-//	usleep(1000);
-//	printf("unblocking a thread\n");
-//	mythread_enter_kernel();
-//	mythread_unblock(mythread_readyq(),2);
-	//mythread_unblock(mythread_readyq(),2);
+	//mythread_attr_t attr1;
 	//
-        mythread_join(tid1,NULL);
-        mythread_join(tid2,NULL);
-        mythread_join(tid3,NULL);
-        mythread_join(tid4,NULL);
+	attr1 = malloc(sizeof(mythread_attr_t));
+	attr2 = malloc(sizeof(mythread_attr_t));
+	attr3 = malloc(sizeof(mythread_attr_t));
+	attr4 = malloc(sizeof(mythread_attr_t));
+
+
+	printf("Test Case:1 , concurrency: 1, 4 Threads with equal priority\n");
+	usleep(1000);
+	testCase(1,10,10,10,10,0);
+
+		
+	printf("Test Case:2 , concurrency: 1, 4 Threads with unique priority. High priority thread finishes then next thread starts\n");
+	usleep(1000);
+	testCase(1,7,8,9,10,0);
+		
+	printf("Test Case:3 ,concurrency: 1, 4 Threads. 3 with equal priority and 1 thread with higher priority created later.When the high priority thread enters the system it shoud run to completion\n");
+	usleep(1000);
+	testCase(1,10,10,10,3,0);
+
+
+	printf("Test Case:4 , concurrency: 1, 3 Threads with equal priority , thread1's priority is decreased in half-way execution. Hence thread1 should finish at the end\n");
+	usleep(1000);
+	testCase(1,9,9,9,9,1);
+
+	printf("================\nRepeat the above 4 test cases with concurrency 2\n===============\n");
+
+	printf("Test Case:5 , concurrency: 2, 4 Threads with equal priority\n");
+	usleep(1000);
+	testCase(2,10,10,10,10,0);
+		
+	printf("Test Case:6 , concurrency: 2, 4 Threads with unique priority. High priority thread finishes then next thread starts\n");
+	usleep(1000);
+	testCase(2,7,9,7,9,0);
+		
+	printf("Test Case:7 ,concurrency: 2, 4 Threads. 3 with equal priority and 1 thread with higher priority created later.When the high priority thread enters the system it shoud run to completion\n");
+	usleep(1000);
+	testCase(2,10,10,10,3,0);
+
+
+	printf("Test Case:8 , concurrency: 2, 3 Threads with equal priority , thread1's priority is decreased in half-way execution. Hence thread1 should finish at the end\n");
+	usleep(1000);
+	testCase(2,9,9,9,9,1);
+
 
 //	printSigUserCount();
         mythread_exit(NULL);

@@ -1,5 +1,4 @@
 #include <signal.h>
-#define print(string) write(1,string,strlen(string))
 /*
  * mysched.h -- a header for implementation of thread scheduler
  *

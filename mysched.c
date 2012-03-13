@@ -4,6 +4,15 @@
 #include <signal.h>
 #include <sys/syscall.h>
 
+//#define VERBOSE 1
+//#define DEBUG 1
+#define ALARM 32
+#define SIGUSR 8
+#define DEFAULT_ATTR 10 /* Default value of sched_priority */
+#define BLOCKED 16
+#define getMember(node,member) ((mythread_t)((node)->item))->member
+#define print(string) write(1,string,strlen(string))
+
 
 //int sigusr1_once=0;
 struct itimerval* alrm_struct;
@@ -226,7 +235,7 @@ void mythread_init_sched(void) {
                 
                 sigaction(SIGALRM,&alrm_handler,NULL);
                 sigaction(SIGUSR1,&only_block,NULL);
-//                sigprocmask(SIG_UNBLOCK,&alrm_handler.sa_mask,NULL);
+                sigprocmask(SIG_UNBLOCK,&alrm_handler.sa_mask,NULL);
                 //mythread_exit(NULL);
         //mythread_enter_kernel();
         //mythread_block(mythread_readyq(),BLOCKED);
